@@ -22,10 +22,8 @@ pub fn handle(req: Request<Body>) -> BoxFut {
                 .concat2()
                 .map(|chunk| {
                     let params = post_params(&chunk);
-
-                    println!("Call = {:?}", call_params(&params));
-
-                    Response::new(Body::from("Hi!"))
+                    println!("{:?}", params);
+                    Response::new(Body::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Reject /></Response>"))
                 });
 
             return Box::new(reversed);
