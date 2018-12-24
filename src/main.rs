@@ -3,7 +3,9 @@ extern crate hyper;
 extern crate phone_adventures;
 extern crate url;
 
-use phone_adventures::web;
+use phone_adventures::adventure;
+use phone_adventures::web::call;
+use phone_adventures::web::handle;
 use hyper::rt::Future;
 use hyper::service;
 use hyper::Server;
@@ -12,8 +14,13 @@ use hyper::rt;
 fn main() {
     let addr = ([0, 0, 0, 0], 3000).into();
 
+    let handler = handle::Handler<_, _> {
+        adventure: adventure::,
+        planner: call::TwilioRejectPlanner,
+    };
+
     let server = Server::bind(&addr)
-        .serve(|| service::service_fn(web::handle))
+        .serve(|| service::service_fn(handler.handle))
         .map_err(|e| eprintln!("server error: {}", e));
 
     println!("Listening on http://{}", addr);
