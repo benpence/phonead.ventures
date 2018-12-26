@@ -1,5 +1,4 @@
-extern crate futures;
-extern crate hyper;
+extern crate rouille;
 extern crate url;
 
 pub mod adventure;

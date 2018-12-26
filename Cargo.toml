@@ -3,14 +3,13 @@ name = "phone_adventures"
 version = "0.1.0"
 
 [dependencies]
-futures = "0.1"
-hyper   = "0.12"
-url     = "1.7"
+rouille  = "3"
+url      = "1.7"
 
 [lib]
 name = "phone_adventures"
-path = "src/lib.rs"
+path = "src/main/rust/lib.rs"
 
 [[bin]]
 name = "phone_adventures_server"
-path = "src/main.rs"
+path = "src/main/rust/main.rs"
