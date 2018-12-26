@@ -6,6 +6,7 @@ pub enum Caller {
     CallerWithChoice(String, i32),
 }
 
+#[derive(Debug)]
 pub struct WebParams {
     pub http_headers: HashMap<String, Vec<String>>,
     pub query_params: HashMap<String, String>,

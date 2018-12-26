@@ -1,8 +1,7 @@
 use rouille;
 use rouille::input::post;
 use std::collections::HashMap;
-//use url::form_urlencoded;
-use url::Url;
+use url::form_urlencoded;
 
 use crate::types::*;
 
@@ -56,16 +55,9 @@ fn extract_http_headers(request: &rouille::Request) -> HashMap<String, Vec<Strin
 }
 
 fn extract_query_params(request: &rouille::Request) -> HashMap<String, String> {
-    let url_result = Url::parse(request.raw_url());
-
-    let query_params_result = url_result.map(|url| {
-        url
-            .query_pairs()
-            .map(|(cow_key, cow_val)| (cow_key.to_string(), cow_val.to_string()))
-            .collect::<HashMap<String, String>>()
-    });
-
-    query_params_result.unwrap_or(HashMap::new())
+    form_urlencoded::parse(request.raw_query_string().as_bytes())
+        .into_owned()
+        .collect::<HashMap<String, String>>()
 }
 
 fn extract_body_params(request: &rouille::Request) -> HashMap<String, String> {

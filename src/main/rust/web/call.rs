@@ -8,7 +8,7 @@ impl CallPlanner for TwilioRejectPlanner {
         let opt_caller = params.body_params.get("From");
         let opt_digits = params.body_params.get("Input").and_then(|s| s.parse::<i32>().ok());
 
-        println!("{:?}", params.body_params);
+        println!("{:?}", params);
 
         match (opt_caller, opt_digits) {
             (Some(phone), Some(n)) if 0 < n && n < 10 => Ok(Caller::CallerWithChoice(phone.clone(), n)),
