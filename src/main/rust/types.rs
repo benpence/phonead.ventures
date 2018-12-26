@@ -14,16 +14,16 @@ pub struct WebParams {
 }
 
 pub enum Action {
-    Play(AudioFilePath),
+    Play(AudioFile),
     Choices(Vec<Choice>),
 }
 
 pub struct Choice {
     pub dial_number: i32,
-    pub description: AudioFilePath
+    pub description: AudioFile,
 }
 
-pub struct AudioFilePath {
+pub struct AudioFile {
     pub path: String,
 }
 
