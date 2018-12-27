@@ -3,8 +3,8 @@ extern crate phone_adventures;
 extern crate rouille;
 
 use phone_adventures::adventure;
-use phone_adventures::web::call;
-use phone_adventures::web::route;
+use phone_adventures::twilio::planner;
+use phone_adventures::web;
 use std::io;
 
 fn main() {
@@ -17,9 +17,9 @@ fn main() {
             } else {
                 router!(request,                                    
                     (POST) (/) => {  
-                        let mut handler = route::Handler {
+                        let mut handler = web::Handler {
                             adventure: adventure::DummyStateMachine,
-                            planner: call::TwilioPlayPlanner {
+                            planner: planner::TwilioPlanner {
                                 base_url: String::from("https://phonead.ventures"),
                             },
                         };
