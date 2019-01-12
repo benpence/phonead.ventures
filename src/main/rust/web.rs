@@ -5,24 +5,18 @@ use url::form_urlencoded;
 
 use crate::types::*;
 
-pub struct Handler <A, B>
-where A: AdventureStateMachine,
-      B: CallPlanner,
-{
-    pub adventure: A,
-    pub planner: B,
+pub struct Handler {
+    pub machine: Box<AdventureMachine + Send>,
+    pub planner: Box<CallPlanner + Send>,
 }
 
-impl<A, B> Handler<A, B>
-where A: AdventureStateMachine,
-      B: CallPlanner,
-{
+impl Handler {
     pub fn handle(&mut self, request: &rouille::Request) -> rouille::Response {
         let web_params = extract_web_params(request);
 
         let output_result = self.planner
             .extract_caller(&web_params)
-            .and_then(|caller| self.adventure.next_action(&caller))
+            .and_then(|caller| self.machine.next_action(&caller))
             .and_then(|action| self.planner.format_action(&action));
 
         match output_result {
