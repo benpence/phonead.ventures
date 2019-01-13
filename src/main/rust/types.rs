@@ -2,9 +2,20 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum Caller {
-    Caller(String),
-    CallerWithChoice(String, i32),
+    Caller(Phone),
+    CallerWithChoice(Phone, i32),
 }
+
+impl Caller {
+    pub fn phone(&self) -> &Phone {
+        match self {
+            Caller::Caller(phone)              => &phone,
+            Caller::CallerWithChoice(phone, _) => &phone,
+        }
+    }
+}
+
+pub type Phone = String;
 
 #[derive(Debug)]
 pub struct WebParams {
@@ -15,14 +26,16 @@ pub struct WebParams {
 
 #[derive(Debug)]
 pub enum Action {
-    Play(AudioFile),
+//    Play(AudioFile),
     Choices(Vec<Choice>),
+    Line(String),
 }
 
 #[derive(Debug)]
 pub struct Choice {
     pub dial_number: i32,
-    pub description: AudioFile,
+//    pub description: AudioFile,
+    pub description: String,
 }
 
 #[derive(Debug)]
@@ -36,13 +49,9 @@ impl Clone for AudioFile {
     }
 }
 
-pub trait Sessions: Send {
-    fn get(&self, key: &Vec<u8>) -> Result<Vec<u8>, String>;
-    fn put(&mut self, key: &[u8], val: &[u8]) -> Result<(), String>;
-}
 
 pub trait AdventureMachine {
-    fn next_action(&mut self, caller: &Caller) -> Result<Action, String>;
+    fn next_action(&mut self, caller: Caller) -> Result<Action, String>;
 }
 
 pub trait CallPlanner {

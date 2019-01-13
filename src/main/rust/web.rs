@@ -16,7 +16,7 @@ impl Handler {
 
         let output_result = self.planner
             .extract_caller(&web_params)
-            .and_then(|caller| self.machine.next_action(&caller))
+            .and_then(|caller| self.machine.next_action(caller))
             .and_then(|action| self.planner.format_action(&action));
 
         match output_result {

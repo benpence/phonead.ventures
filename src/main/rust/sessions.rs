@@ -1,15 +1,41 @@
+use crate::adventure::script;
+use std::collections::HashMap;
+use std::collections::hash_map;
+
 use crate::types::*;
 
-pub struct DummySessions;
+//pub struct ScriptState {
+//    name: script::ScriptName,
+//    scene: script::SceneName,
+//}
 
-impl Sessions for DummySessions {
-    fn get(&self, _key: &Vec<u8>) -> Result<Vec<u8>, String> {
-        // TODO:
-        panic!("Unimplemented");
+pub enum ScriptState {
+    AskedForInput,
+    ProvidedInput(i32),
+}
+
+pub trait Sessions: Send {
+    fn entry(
+        &mut self,
+        phone: &Phone
+    ) -> Result<hash_map::Entry<Phone, ScriptState>, String>;
+}
+
+pub struct InMemorySessions {
+    data: HashMap<Phone, ScriptState>
+}
+
+impl InMemorySessions {
+    pub fn new() -> InMemorySessions {
+        InMemorySessions { data: HashMap::new() }
     }
+}
 
-    fn put(&mut self, _key: &[u8], _val: &[u8]) -> Result<(), String> {
-        // TODO:
-        panic!("Unimplemented");
+impl Sessions for InMemorySessions {
+    fn entry(
+        &mut self,
+        phone: &Phone
+    ) -> Result<hash_map::Entry<Phone, ScriptState>, String> {
+        Ok(self.data.entry(phone.to_string()))
     }
 }

@@ -4,9 +4,11 @@ extern crate rouille;
 
 use phone_adventures::adventure::machine;
 use phone_adventures::adventure::reading;
+use phone_adventures::adventure::script;
 use phone_adventures::sessions;
 use phone_adventures::twilio::planner;
 use phone_adventures::web;
+use std::collections::HashMap;
 use std::io;
 use std::sync;
 
@@ -15,7 +17,7 @@ fn main() {
 
     let handler = web::Handler {
         machine: Box::new(machine::ScriptMachine {
-            sessions: Box::new(sessions::DummySessions),
+            sessions: Box::new(sessions::InMemorySessions::new()),
             readings: load_readings("").map_err(|e| panic!(e) ).unwrap(),
         }),
         planner: Box::new(planner::TwilioPlanner {
@@ -43,7 +45,7 @@ fn main() {
     });
 }
 
-fn load_readings(_directory: &str) -> Result<Vec<reading::Reading>, String> {
+fn load_readings(_directory: &str) -> Result<HashMap<script::ScriptName, reading::Reading>, String> {
     // TODO:
-    Ok(vec![])
+    Ok(HashMap::new())
 }

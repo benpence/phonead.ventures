@@ -33,22 +33,42 @@ impl CallPlanner for TwilioPlanner {
 
     fn format_action(&self, action: &Action) -> Result<String, String> {
         let response = match action {
-            Action::Play(audio_file) => twiml::Response {
+            Action::Choices(choices) => twiml::Response {
                 verbs: vec![
-                    twiml::Verb::Play(twiml::Play { audio_file_url: self.to_url(audio_file) }),
+                    twiml::Verb::Gather(twiml::Gather {
+                        children: choices
+                            .iter()
+                            .map(|choice| {
+                                let text = format!("For {}, press {}", choice.description, choice.dial_number);
+                                twiml::GatherChild::Say(twiml::Say { text })
+                            })
+                            .collect(),
+                        num_digits: 1,
+                    })
                 ]
             },
-                    
-            Action::Choices(choices) => twiml::Response {
-               verbs: vec![
-                   twiml::Verb::Gather(twiml::Gather {
-                       children: choices.iter().map(|choice|
-                           twiml::GatherChild::Play(twiml::Play { audio_file_url: self.to_url(&choice.description) })
-                       ).collect(),
-                       num_digits: 1,
-                   })
-               ]
+            Action::Line(text) => twiml::Response {
+                verbs: vec![
+                    twiml::Verb::Say(twiml::Say { text: text.to_string() })
+                ]
             },
+
+        //    Action::Choices(choices) => twiml::Response {
+        //        verbs: vec![
+        //            twiml::Verb::Gather(twiml::Gather {
+        //                children: choices.iter().map(|choice|
+        //                    twiml::GatherChild::Play(twiml::Play { audio_file_url: self.to_url(&choice.description) })
+        //                ).collect(),
+        //                num_digits: 1,
+        //            })
+        //        ]
+        //    },
+        //            
+        //    Action::Play(audio_file) => twiml::Response {
+        //        verbs: vec![
+        //            twiml::Verb::Play(twiml::Play { audio_file_url: self.to_url(audio_file) }),
+        //        ]
+        //    },
         };
 
         Ok(twiml::to_xml_output(&response))
