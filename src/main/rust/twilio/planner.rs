@@ -82,14 +82,18 @@ impl TwilioPlanner {
 }
 
 fn extract_twilio_caller(params: &WebParams) -> Result<Caller, String> {
+    println!("params = {:?}", params);
+
     let opt_caller = params.body_params.get("From");
-    let opt_digits = params.body_params.get("Input").and_then(|s| s.parse::<i32>().ok());
+    let opt_digits = params.body_params.get("Digits").and_then(|s| s.parse::<i32>().ok());
 
-    println!("{:?}", params);
-
-    match (opt_caller, opt_digits) {
+    let caller_result  = match (opt_caller, opt_digits) {
         (Some(phone), Some(n)) if 0 < n && n < 10 => Ok(Caller::CallerWithChoice(phone.clone(), n)),
         (Some(phone), _      )                    => Ok(Caller::Caller(phone.clone())),
         (_,           _      )                    => Err(String::from("\"From\" body param missing from request")),
-    }
+    };
+
+    println!("caller_result = {:?}", caller_result);
+
+    caller_result
 }
