@@ -3,7 +3,7 @@ use std::vec::Vec;
 
 pub struct Script {
     pub name: ScriptName,
-    pub start: SceneName,
+    pub first_scene: SceneName,
     pub scenes: HashMap<SceneName, Scene>,
 }
 

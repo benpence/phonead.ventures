@@ -39,36 +39,20 @@ impl CallPlanner for TwilioPlanner {
                         children: choices
                             .iter()
                             .map(|choice| {
-                                let text = format!("For {}, press {}", choice.description, choice.dial_number);
-                                twiml::GatherChild::Say(twiml::Say { text })
+                                let play = twiml::Play { audio_file_url: self.to_url(&choice.description) };
+                                twiml::GatherChild::Play(play)
                             })
                             .collect(),
                         num_digits: 1,
                     })
                 ]
             },
-            Action::Line(text) => twiml::Response {
+                    
+            Action::Play(audio_file) => twiml::Response {
                 verbs: vec![
-                    twiml::Verb::Say(twiml::Say { text: text.to_string() })
+                    twiml::Verb::Play(twiml::Play { audio_file_url: self.to_url(audio_file) }),
                 ]
             },
-
-        //    Action::Choices(choices) => twiml::Response {
-        //        verbs: vec![
-        //            twiml::Verb::Gather(twiml::Gather {
-        //                children: choices.iter().map(|choice|
-        //                    twiml::GatherChild::Play(twiml::Play { audio_file_url: self.to_url(&choice.description) })
-        //                ).collect(),
-        //                num_digits: 1,
-        //            })
-        //        ]
-        //    },
-        //            
-        //    Action::Play(audio_file) => twiml::Response {
-        //        verbs: vec![
-        //            twiml::Verb::Play(twiml::Play { audio_file_url: self.to_url(audio_file) }),
-        //        ]
-        //    },
         };
 
         Ok(twiml::to_xml_output(&response))
@@ -85,7 +69,7 @@ fn extract_twilio_caller(params: &WebParams) -> Result<Caller, String> {
     println!("params = {:?}", params);
 
     let opt_caller = params.body_params.get("From");
-    let opt_digits = params.body_params.get("Digits").and_then(|s| s.parse::<i32>().ok());
+    let opt_digits = params.body_params.get("Digits").and_then(|s| s.parse::<usize>().ok());
 
     let caller_result  = match (opt_caller, opt_digits) {
         (Some(phone), Some(n)) if 0 < n && n < 10 => Ok(Caller::CallerWithChoice(phone.clone(), n)),

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub enum Caller {
     Caller(Phone),
-    CallerWithChoice(Phone, i32),
+    CallerWithChoice(Phone, usize),
 }
 
 impl Caller {
@@ -26,16 +26,14 @@ pub struct WebParams {
 
 #[derive(Debug)]
 pub enum Action {
-//    Play(AudioFile),
+    Play(AudioFile),
     Choices(Vec<Choice>),
-    Line(String),
 }
 
 #[derive(Debug)]
 pub struct Choice {
-    pub dial_number: i32,
-//    pub description: AudioFile,
-    pub description: String,
+    pub dial_number: usize,
+    pub description: AudioFile,
 }
 
 #[derive(Debug)]

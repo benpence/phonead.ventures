@@ -4,14 +4,16 @@ use std::collections::hash_map;
 
 use crate::types::*;
 
-//pub struct ScriptState {
-//    name: script::ScriptName,
-//    scene: script::SceneName,
-//}
-
 pub enum ScriptState {
-    AskedForInput,
-    ProvidedInput(i32),
+    ChooseScript,
+    BeginScene {
+        script_name: script::ScriptName,
+        scene_name: script::SceneName,
+    },
+    ChooseTransition {
+        script_name: script::ScriptName,
+        scene_name: script::SceneName,
+    },
 }
 
 pub trait Sessions: Send {
