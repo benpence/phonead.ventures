@@ -22,7 +22,10 @@ impl Handler {
         match output_result {
             Ok(output) => rouille::Response::html(output),
             // TODO: Log error
-            Err(_error) => rouille::Response::empty_404()
+            Err(error) => {
+                println!("Error: {}", error);
+                rouille::Response::empty_404()
+            }
         }
     }
 }

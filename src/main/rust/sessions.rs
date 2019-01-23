@@ -4,6 +4,7 @@ use std::collections::hash_map;
 
 use crate::types::*;
 
+#[derive(Debug)]
 pub enum ScriptState {
     ChooseScript,
     BeginScene {

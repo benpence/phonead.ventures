@@ -12,6 +12,8 @@ use std::collections::HashMap;
 use std::io;
 use std::sync;
 
+use phone_adventures::types::*;
+
 fn main() {
     println!("Now listening on 0.0.0.0:8888");
 
@@ -45,7 +47,52 @@ fn main() {
     });
 }
 
-fn load_readings(_directory: &str) -> Result<HashMap<script::ScriptName, reading::Reading>, String> {
-    // TODO:
-    Ok(HashMap::new())
+fn load_readings(_directory: &str) -> Result<Vec<(script::ScriptName, reading::Reading)>, String> {
+    let mut voice_over_transitions: HashMap<String, Vec<AudioFile>> = HashMap::new();
+    voice_over_transitions.insert("scene 0".to_string(), vec![AudioFile { path: "scene 1".to_string()}, AudioFile { path: "scene 2".to_string()}]);
+    voice_over_transitions.insert("scene 1".to_string(), vec![AudioFile { path: "scene 3".to_string()}, AudioFile { path: "scene 4".to_string()}]);
+    voice_over_transitions.insert("scene 2".to_string(), vec![AudioFile { path: "scene 5".to_string()}, AudioFile { path: "scene 6".to_string()}]);
+    voice_over_transitions.insert("scene 3".to_string(), vec![]);
+    voice_over_transitions.insert("scene 4".to_string(), vec![]);
+    voice_over_transitions.insert("scene 5".to_string(), vec![]);
+    voice_over_transitions.insert("scene 6".to_string(), vec![]);
+
+    let mut voice_over_scenes: HashMap<String, AudioFile> = HashMap::new();
+    voice_over_scenes.insert("scene 0".to_string(), AudioFile { path: "scene 0".to_string()});
+    voice_over_scenes.insert("scene 1".to_string(), AudioFile { path: "scene 1".to_string()});
+    voice_over_scenes.insert("scene 2".to_string(), AudioFile { path: "scene 2".to_string()});
+    voice_over_scenes.insert("scene 3".to_string(), AudioFile { path: "scene 3".to_string()});
+    voice_over_scenes.insert("scene 4".to_string(), AudioFile { path: "scene 4".to_string()});
+    voice_over_scenes.insert("scene 5".to_string(), AudioFile { path: "scene 5".to_string()});
+    voice_over_scenes.insert("scene 6".to_string(), AudioFile { path: "scene 6".to_string()});
+
+    let voice_over = |script_name: String| {
+        reading::VoiceOver {
+            script_name: AudioFile { path: script_name.clone() },
+            scenes: voice_over_scenes.clone(),
+            transitions: voice_over_transitions.clone(),
+        }
+    };
+
+    let mut transitions: HashMap<String, Vec<String>> = HashMap::new();
+    transitions.insert("scene 0".to_string(), vec!["scene 1".to_string(), "scene 2".to_string()]);
+    transitions.insert("scene 1".to_string(), vec!["scene 3".to_string(), "scene 4".to_string()]);
+    transitions.insert("scene 2".to_string(), vec!["scene 5".to_string(), "scene 6".to_string()]);
+    transitions.insert("scene 3".to_string(), vec![]);
+    transitions.insert("scene 4".to_string(), vec![]);
+    transitions.insert("scene 5".to_string(), vec![]);
+    transitions.insert("scene 6".to_string(), vec![]);
+
+    let script = |script_name: String| (script_name.clone(), reading::Reading {
+        script_name: script_name.clone(),
+        first_scene: String::from("scene 0"),
+        transitions: transitions.clone(),
+        voice_over: voice_over(script_name),
+    });
+
+    Ok(vec![
+        script("script 0".to_string()),
+        script("script 1".to_string()),
+        script("script 2".to_string())
+    ])
 }

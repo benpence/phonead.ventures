@@ -36,17 +36,10 @@ pub struct Choice {
     pub description: AudioFile,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AudioFile {
     pub path: String,
 }
-
-impl Clone for AudioFile {
-    fn clone(&self) -> AudioFile {
-        AudioFile { path: self.path.clone() }
-    }
-}
-
 
 pub trait AdventureMachine {
     fn next_action(&mut self, caller: Caller) -> Result<Action, String>;

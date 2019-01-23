@@ -19,53 +19,78 @@ pub struct ScriptMachine {
 
 impl AdventureMachine for ScriptMachine {
     fn next_action(&mut self, caller: Caller) -> Result<Action, String> {
-        self.sessions
-            .entry(caller.phone())
-            .and_then(|state_entry| {
-                // For new callers, start them off on 
-                let state = state_entry.or_insert(sessions::ScriptState::ChooseScript);
+        let state_entry = self.sessions.entry(caller.phone())?;
 
-                match caller {
-                    Caller::Caller(_) =>
-                        ScriptMachine::no_input_transition(state),
-                    Caller::CallerWithChoice(_, input) =>
-                        ScriptMachine::input_transition(&self.readings, state, input),
-                };
-                
-                ScriptMachine::next_action(&self.readings, state)
-            })
+        // For new callers, start them off on 
+        let state = state_entry.or_insert(sessions::ScriptState::ChooseScript);
+
+        println!("{:?} -> {:?}", caller.phone(), state);
+
+        match caller {
+            Caller::Caller(_) =>
+                ScriptMachine::no_input_transition(&self.readings, state),
+            Caller::CallerWithChoice(_, input) =>
+                ScriptMachine::input_transition(&self.readings, state, input),
+        };
+
+        println!("{:?} -> {:?}", caller.phone(), state);
+        
+        ScriptMachine::next_action(&self.readings, state)
     }
 }
 
 impl ScriptMachine {
     fn get_transitions<'a>(
-        readings: &'a Vec<(script::ScriptName, reading::Reading)>,
+        readings: &'a [(script::ScriptName, reading::Reading)],
         script_name: &script::ScriptName,
         scene_name: &script::SceneName,
-    ) -> Result<&'a (Box<reading::VoiceOver + Send>, Vec<script::SceneName>), String> {
+    ) -> Result<(&'a reading::VoiceOver, &'a [script::SceneName]), String> {
         // Valid script name?
-        let reading_result = readings
-            .iter()
+        let reading = readings
+            .into_iter()
             .find(|(name, _)| name == script_name)
-            .ok_or(format!("Invalid script: \"{}\"", script_name));
+            .map(|tuple| &tuple.1)
+            .ok_or(format!("Invalid script: \"{}\"", script_name))?;
 
         // Valid scene name?
-        let transitions_result = reading_result.and_then(|(_, reading)| reading
+        let voice_over_and_transitions = reading
             .transitions
             .get(scene_name)
-            .map(|transitions| (&reading.voice_over, transitions.clone()))
-            .ok_or(format!("No transitions in script \"{}\" for scene: \"{}\"", script_name, scene_name))
-        );
+            .map(|transitions| (&reading.voice_over, &transitions[..]))
+            .ok_or(format!("No transitions in script \"{}\" for scene: \"{}\"", script_name, scene_name))?;
 
-        transitions_result
+        Ok(voice_over_and_transitions)
     }
 
-    fn no_input_transition(state: &mut sessions::ScriptState) {
+    fn no_input_transition(
+        readings: &Vec<(script::ScriptName, reading::Reading)>,
+        state: &mut sessions::ScriptState
+    ) {
         *state = match std::mem::replace(state, sessions::ScriptState::ChooseScript) {
             sessions::ScriptState::BeginScene { script_name, scene_name } => {
-                sessions::ScriptState::ChooseTransition {
-                    script_name: script_name.to_string(),
-                    scene_name: scene_name.to_string(),
+                let transitions_result = ScriptMachine::get_transitions(
+                    readings,
+                    &script_name,
+                    &scene_name
+                );
+
+                if let Ok((_, transitions)) = transitions_result {
+                    // End of story? --> Choose another adventure
+                    if transitions.is_empty() {
+                        sessions::ScriptState::ChooseScript
+                    
+                    // Does this input have a matching index in the next scene choices?
+                    } else {
+                        sessions::ScriptState::ChooseTransition {
+                            script_name: script_name.to_string(),
+                            scene_name: scene_name.to_string(),
+                        }
+                    }
+                } else {
+                    sessions::ScriptState::BeginScene {
+                        script_name,
+                        scene_name
+                    }
                 }
             },
             s => s,
@@ -99,7 +124,7 @@ impl ScriptMachine {
                 let transitions_result = ScriptMachine::get_transitions(
                     readings,
                     &script_name,
-                    &script_name
+                    &scene_name
                 );
 
                 if let Ok((_, transitions)) = transitions_result {
@@ -172,26 +197,24 @@ impl ScriptMachine {
 
             // Ask to choose a next scene
             sessions::ScriptState::ChooseTransition { script_name, scene_name } => {
-                let transitions_result = ScriptMachine::get_transitions(
+                let (voice_over, transitions) = ScriptMachine::get_transitions(
                     readings,
                     script_name,
                     scene_name
-                );
+                )?;
 
-                transitions_result.and_then(|(voice_over, transitions)| {
-                    let choices_result: Result<Vec<_>, _> = transitions
-                        .iter()
-                        .enumerate()
-                        .map(|(idx, next_scene_name)| {
-                            let target = &reading::Target::Choice(next_scene_name.to_string(), idx);
-                            let description_result = voice_over.of(target);
+                let choices_result: Result<Vec<_>, _> = transitions
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, _)| {
+                        let target = &reading::Target::Choice(scene_name.to_string(), idx);
+                        let description_result = voice_over.of(target);
 
-                            description_result.map(|description| Choice { dial_number: idx + 1, description })
-                        })
-                        .collect();
+                        description_result.map(|description| Choice { dial_number: idx + 1, description })
+                    })
+                    .collect();
 
-                    choices_result.map(|choices| Action::Choices(choices))
-                })
+                choices_result.map(|choices| Action::Choices(choices))
             },
         }
     }
