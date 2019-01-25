@@ -7,7 +7,7 @@ use crate::types::*;
 pub struct DummyAdventureMachine;
 
 impl AdventureMachine for DummyAdventureMachine {
-    fn next_action(&mut self, _caller: Caller) -> Result<Action, String> {
+    fn next_action(&mut self, _caller: &Caller) -> Result<Action, String> {
         Ok(Action::Play(AudioFile { path: String::from("static/audio/piano.mp3") }))
     }
 }
@@ -18,24 +18,24 @@ pub struct ScriptMachine {
 }
 
 impl AdventureMachine for ScriptMachine {
-    fn next_action(&mut self, caller: Caller) -> Result<Action, String> {
-        let state_entry = self.sessions.entry(caller.phone())?;
+    fn next_action(&mut self, caller: &Caller) -> Result<Action, String> {
+        let phone = &caller.phone;
+        let state_opt = self.sessions.get(phone)?;
 
-        // For new callers, start them off on 
-        let state = state_entry.or_insert(sessions::ScriptState::ChooseScript);
+        // New callers will be asked to choose a script
+        let old_state = state_opt.unwrap_or(sessions::ScriptState::ChooseScript);
+        let new_state = ScriptMachine::make_transition(
+            &self.readings,
+            &old_state,
+            &caller.dial_number
+        )?;
 
-        println!("{:?} -> {:?}", caller.phone(), state);
+        println!("{:?}: {:?} -> {:?}", phone, old_state, new_state);
 
-        match caller {
-            Caller::Caller(_) =>
-                ScriptMachine::no_input_transition(&self.readings, state),
-            Caller::CallerWithChoice(_, input) =>
-                ScriptMachine::input_transition(&self.readings, state, input),
-        };
+        let action = ScriptMachine::choose_action(&self.readings, &new_state)?;
+        self.sessions.set(phone.to_string(), new_state)?;
 
-        println!("{:?} -> {:?}", caller.phone(), state);
-        
-        ScriptMachine::next_action(&self.readings, state)
+        Ok(action)
     }
 }
 
@@ -62,50 +62,15 @@ impl ScriptMachine {
         Ok(voice_over_and_transitions)
     }
 
-    fn no_input_transition(
-        readings: &Vec<(script::ScriptName, reading::Reading)>,
-        state: &mut sessions::ScriptState
-    ) {
-        *state = match std::mem::replace(state, sessions::ScriptState::ChooseScript) {
-            sessions::ScriptState::BeginScene { script_name, scene_name } => {
-                let transitions_result = ScriptMachine::get_transitions(
-                    readings,
-                    &script_name,
-                    &scene_name
-                );
+    fn make_transition(
+        readings: &[(script::ScriptName, reading::Reading)],
+        state: &sessions::ScriptState,
+        input: &Option<usize>
+    ) -> Result<sessions::ScriptState, String> {
 
-                if let Ok((_, transitions)) = transitions_result {
-                    // End of story? --> Choose another adventure
-                    if transitions.is_empty() {
-                        sessions::ScriptState::ChooseScript
-                    
-                    // Does this input have a matching index in the next scene choices?
-                    } else {
-                        sessions::ScriptState::ChooseTransition {
-                            script_name: script_name.to_string(),
-                            scene_name: scene_name.to_string(),
-                        }
-                    }
-                } else {
-                    sessions::ScriptState::BeginScene {
-                        script_name,
-                        scene_name
-                    }
-                }
-            },
-            s => s,
-        }
-    }
-
-    fn input_transition(
-        readings: &Vec<(script::ScriptName, reading::Reading)>,
-        state: &mut sessions::ScriptState,
-        input: usize
-    ) {
-        *state = match std::mem::replace(state, sessions::ScriptState::ChooseScript)  {
-
+        let new_state = match (state, input) {
             // Chooses an adventure
-            sessions::ScriptState::ChooseScript => {
+            (sessions::ScriptState::ChooseScript, Some(input)) => {
                 // Does this input have a matching index in the readings?
                 if let Some((script_name, reading)) = readings.get(input - 1) {
                     // Start first scene of script
@@ -114,53 +79,64 @@ impl ScriptMachine {
                         scene_name: reading.first_scene.to_string(),
                     }
                 } else {
-                    // Keep state the same
                     sessions::ScriptState::ChooseScript
                 }
             },
 
-            // Chooses the next scene
-            sessions::ScriptState::ChooseTransition { script_name, scene_name } => {
-                let transitions_result = ScriptMachine::get_transitions(
+            // Just listened to a scene --> Move to transitions
+            (sessions::ScriptState::BeginScene { script_name, scene_name }, None) => {
+                let (_, transitions) = ScriptMachine::get_transitions(
                     readings,
                     &script_name,
                     &scene_name
-                );
+                )?;
 
-                if let Ok((_, transitions)) = transitions_result {
-                    // End of story? --> Choose another adventure
-                    if transitions.is_empty() {
-                        sessions::ScriptState::ChooseScript
-                    
-                    // Does this input have a matching index in the next scene choices?
-                    } else if let Some(next_scene_name) = transitions.get(input - 1) {
-                        sessions::ScriptState::BeginScene {
-                            script_name: script_name,
-                            scene_name: next_scene_name.to_string(),
-                        }
-                    } else {
-                        sessions::ScriptState::ChooseTransition {
-                            script_name,
-                            scene_name
-                        }
-                    }
+                // End of story? --> Choose another adventure
+                if transitions.is_empty() {
+                    sessions::ScriptState::ChooseScript
+                
+                // Time to ask choices
                 } else {
                     sessions::ScriptState::ChooseTransition {
-                        script_name,
-                        scene_name
+                        script_name: script_name.to_string(),
+                        scene_name: scene_name.to_string(),
                     }
                 }
             },
 
-            // This is an invalid combination
-            // TODO: Log this
-            s => s,
+            // Chooses the next scene
+            (sessions::ScriptState::ChooseTransition { script_name, scene_name }, Some(input)) => {
+                let (_, transitions) = ScriptMachine::get_transitions(
+                    readings,
+                    &script_name,
+                    &scene_name
+                )?;
+
+                // Does this input have a matching index in the next scene choices?
+                if let Some(next_scene_name) = transitions.get(input - 1) {
+                    sessions::ScriptState::BeginScene {
+                        script_name: script_name.to_string(),
+                        scene_name: next_scene_name.to_string(),
+                    }
+
+                // User pushed invalid number --> Keep state the same
+                } else {
+                    sessions::ScriptState::ChooseTransition {
+                        script_name: script_name.to_string(),
+                        scene_name: scene_name.to_string()
+                    }
+                }
+            },
+
+            // Keep state as is
+            (s, _) => (*s).clone(),
         };
+
+        Ok(new_state)
     }
 
-
-    fn next_action(
-        readings: &Vec<(script::ScriptName, reading::Reading)>,
+    fn choose_action(
+        readings: &[(script::ScriptName, reading::Reading)],
         state: &sessions::ScriptState
     ) -> Result<Action, String> {
 
@@ -183,16 +159,15 @@ impl ScriptMachine {
 
             // Play the reconding of a scene
             sessions::ScriptState::BeginScene { script_name, scene_name } => {
-                let transitions_result = ScriptMachine::get_transitions(
+                let (voice_over, _) = ScriptMachine::get_transitions(
                     readings,
                     script_name,
                     scene_name
-                );
+                )?;
 
-                transitions_result.and_then(|(voice_over, _)| voice_over
+                voice_over
                     .of(&reading::Target::Scene(scene_name.to_string()))
                     .map(|scene_file| Action::Play(scene_file))
-                )
             },
 
             // Ask to choose a next scene

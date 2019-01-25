@@ -61,6 +61,7 @@ impl CallPlanner for TwilioPlanner {
 
 impl TwilioPlanner {
     fn to_url(&self, audio_file: &AudioFile) -> String {
+        // TODO: Format for url
         format!("{}/{}", self.base_url, audio_file.path)
     }
 }
@@ -70,8 +71,9 @@ fn extract_twilio_caller(params: &WebParams) -> Result<Caller, String> {
     let opt_digits = params.body_params.get("Digits").and_then(|s| s.parse::<usize>().ok());
 
     let caller = match (opt_caller, opt_digits) {
-        (Some(phone), Some(n)) if 0 < n && n < 10 => Ok(Caller::CallerWithChoice(phone.clone(), n)),
-        (Some(phone), _      )                    => Ok(Caller::Caller(phone.clone())),
+        (Some(phone), Some(n)) if 0 < n && n < 10 => Ok(Caller { phone: phone.to_string(), dial_number: Some(n) }),
+        // TODO: If the number parsing fails, perhaps this should all fail
+        (Some(phone), _      )                    => Ok(Caller { phone: phone.to_string(), dial_number: None }),
         (_,           _      )                    => Err(String::from("\"From\" body param missing from request")),
     }?;
 

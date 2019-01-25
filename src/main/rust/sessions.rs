@@ -1,10 +1,9 @@
 use crate::adventure::script;
 use std::collections::HashMap;
-use std::collections::hash_map;
 
 use crate::types::*;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum ScriptState {
     ChooseScript,
     BeginScene {
@@ -18,10 +17,16 @@ pub enum ScriptState {
 }
 
 pub trait Sessions: Send {
-    fn entry(
-        &mut self,
+    fn get(
+        &self,
         phone: &Phone
-    ) -> Result<hash_map::Entry<Phone, ScriptState>, String>;
+    ) -> Result<Option<ScriptState>, String>;
+
+    fn set(
+        &mut self,
+        phone: Phone,
+        state: ScriptState
+    ) -> Result<(), String>;
 }
 
 pub struct InMemorySessions {
@@ -35,10 +40,19 @@ impl InMemorySessions {
 }
 
 impl Sessions for InMemorySessions {
-    fn entry(
-        &mut self,
+    fn get(
+        &self,
         phone: &Phone
-    ) -> Result<hash_map::Entry<Phone, ScriptState>, String> {
-        Ok(self.data.entry(phone.to_string()))
+    ) -> Result<Option<ScriptState>, String> {
+        Ok(self.data.get(phone).map(|s| s.clone()))
+    }
+
+    fn set(
+        &mut self,
+        phone: Phone,
+        state: ScriptState
+    ) -> Result<(), String> {
+        self.data.insert(phone, state);
+        Ok(())
     }
 }

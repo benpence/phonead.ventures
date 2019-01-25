@@ -1,18 +1,9 @@
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub enum Caller {
-    Caller(Phone),
-    CallerWithChoice(Phone, usize),
-}
-
-impl Caller {
-    pub fn phone(&self) -> &Phone {
-        match self {
-            Caller::Caller(phone)              => &phone,
-            Caller::CallerWithChoice(phone, _) => &phone,
-        }
-    }
+pub struct Caller {
+    pub phone: Phone,
+    pub dial_number: Option<usize>,
 }
 
 pub type Phone = String;
@@ -42,7 +33,7 @@ pub struct AudioFile {
 }
 
 pub trait AdventureMachine {
-    fn next_action(&mut self, caller: Caller) -> Result<Action, String>;
+    fn next_action(&mut self, caller: &Caller) -> Result<Action, String>;
 }
 
 pub trait CallPlanner {

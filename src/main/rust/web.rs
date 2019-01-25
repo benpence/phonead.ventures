@@ -12,21 +12,24 @@ pub struct Handler {
 
 impl Handler {
     pub fn handle(&mut self, request: &rouille::Request) -> rouille::Response {
-        let web_params = extract_web_params(request);
-
-        let output_result = self.planner
-            .extract_caller(&web_params)
-            .and_then(|caller| self.machine.next_action(caller))
-            .and_then(|action| self.planner.format_action(&action));
-
-        match output_result {
-            Ok(output) => rouille::Response::html(output),
+        match self.make_output(request) {
+            Ok(output) =>
+                rouille::Response::html(output),
             // TODO: Log error
             Err(error) => {
                 println!("Error: {}", error);
                 rouille::Response::empty_404()
-            }
+            },
         }
+    }
+
+    fn make_output(&mut self, request: &rouille::Request) -> Result<String, String> {
+        let web_params = extract_web_params(request);
+        let caller = self.planner.extract_caller(&web_params)?;
+        let action = self.machine.next_action(&caller)?;
+        let output = self.planner.format_action(&action)?;
+
+        Ok(output)
     }
 }
 
