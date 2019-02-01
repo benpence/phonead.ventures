@@ -20,6 +20,7 @@ fn main() {
     let handler = web::Handler {
         machine: Box::new(machine::ScriptMachine {
             sessions: Box::new(sessions::InMemorySessions::new()),
+            // TODO: Move before
             readings: load_readings("").map_err(|e| panic!(e) ).unwrap(),
         }),
         planner: Box::new(planner::TwilioPlanner {
@@ -69,7 +70,7 @@ fn load_readings(_directory: &str) -> Result<Vec<(script::ScriptName, reading::R
     let voice_over = |script_name: String| {
         reading::VoiceOver {
             script_name: AudioFile { path: script_name.clone() },
-            scenes: voice_over_scenes.clone(),
+            scene_content: voice_over_scenes.clone(),
             transitions: voice_over_transitions.clone(),
         }
     };

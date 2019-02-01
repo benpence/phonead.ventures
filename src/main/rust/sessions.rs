@@ -17,10 +17,10 @@ pub enum ScriptState {
 }
 
 pub trait Sessions: Send {
-    fn get(
-        &self,
+    fn get<'a>(
+        &'a self,
         phone: &Phone
-    ) -> Result<Option<ScriptState>, String>;
+    ) -> Result<Option<&'a ScriptState>, String>;
 
     fn set(
         &mut self,
@@ -40,11 +40,11 @@ impl InMemorySessions {
 }
 
 impl Sessions for InMemorySessions {
-    fn get(
-        &self,
+    fn get<'a>(
+        &'a self,
         phone: &Phone
-    ) -> Result<Option<ScriptState>, String> {
-        Ok(self.data.get(phone).map(|s| s.clone()))
+    ) -> Result<Option<&'a ScriptState>, String> {
+        Ok(self.data.get(phone))
     }
 
     fn set(

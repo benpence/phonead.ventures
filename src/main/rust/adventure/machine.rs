@@ -20,17 +20,22 @@ pub struct ScriptMachine {
 impl AdventureMachine for ScriptMachine {
     fn next_action(&mut self, caller: &Caller) -> Result<Action, String> {
         let phone = &caller.phone;
-        let state_opt = self.sessions.get(phone)?;
 
-        // New callers will be asked to choose a script
-        let old_state = state_opt.unwrap_or(sessions::ScriptState::ChooseScript);
-        let new_state = ScriptMachine::make_transition(
-            &self.readings,
-            &old_state,
-            &caller.dial_number
-        )?;
+        let new_state = {
+            let state_opt = self.sessions.get(phone)?;
 
-        println!("{:?}: {:?} -> {:?}", phone, old_state, new_state);
+            // New callers will be asked to choose a script
+            let old_state = state_opt.unwrap_or(&sessions::ScriptState::ChooseScript);
+            let new_state = ScriptMachine::make_transition(
+                &self.readings,
+                &old_state,
+                &caller.dial_number
+            )?;
+
+            println!("{:?}: {:?} -> {:?}", phone, old_state, new_state);
+
+            new_state
+        };
 
         let action = ScriptMachine::choose_action(&self.readings, &new_state)?;
         self.sessions.set(phone.to_string(), new_state)?;
@@ -129,7 +134,7 @@ impl ScriptMachine {
             },
 
             // Keep state as is
-            (s, _) => (*s).clone(),
+            (s, _) => s.clone(),
         };
 
         Ok(new_state)

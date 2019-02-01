@@ -22,12 +22,12 @@ pub enum Target {
 #[derive(Debug)]
 pub struct VoiceOver {
     pub script_name: AudioFile,
-    pub scenes: HashMap<script::SceneName, AudioFile>,
+    pub scene_content: HashMap<script::SceneName, AudioFile>,
     pub transitions: HashMap<script::SceneName, Vec<AudioFile>>
 }
 
 impl VoiceOver {
-    pub fn from_directory(
+    pub fn try_from_directory(
         _script: &script::Script,
         _recordings_directory: String
     ) -> Result<VoiceOver, String> {
@@ -42,7 +42,7 @@ impl VoiceOver {
             Target::Script => Ok(self.script_name.clone()),
 
             Target::Scene(scene_name) => self
-                .scenes
+                .scene_content
                 .get(scene_name)
                 .map(|file| file.clone())
                 .ok_or(format!("No recording for scene name: \"{}\"", scene_name)),
