@@ -4,6 +4,7 @@ extern crate rouille;
 
 use phone_adventures::adventure::machine;
 use phone_adventures::adventure::reading;
+use phone_adventures::adventure::parse;
 use phone_adventures::adventure::script;
 use phone_adventures::sessions;
 use phone_adventures::twilio::planner;
@@ -15,6 +16,7 @@ use std::sync;
 use phone_adventures::types::*;
 
 fn main() {
+    println!("{:?}", script::parse("Eric (kindly): What the fuck grace!\n"));
     println!("Now listening on 0.0.0.0:8888");
 
     let handler = web::Handler {

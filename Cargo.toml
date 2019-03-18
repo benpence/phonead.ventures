@@ -3,6 +3,8 @@ name = "phone_adventures"
 version = "0.1.0"
 
 [dependencies]
+nom      = "4"
+pom      = "3"
 rouille  = "3"
 url      = "1.7"
 

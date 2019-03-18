@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate nom;
+extern crate pom;
 extern crate rouille;
 extern crate url;
 

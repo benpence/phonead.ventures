@@ -20,7 +20,7 @@ pub struct ScriptMachine {
 impl AdventureMachine for ScriptMachine {
     fn next_action(&mut self, caller: &Caller) -> Result<Action, String> {
         let phone = &caller.phone;
-
+        
         let new_state = {
             let state_opt = self.sessions.get(phone)?;
 
