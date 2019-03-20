@@ -1,5 +1,4 @@
 use pom::parser::*;
-use pom::Parser;
 use std::vec::Vec;
 
 
@@ -34,13 +33,13 @@ pub struct Line {
     pub content: String,
 }
 
-pub fn parse(content: &'static str) -> Result<Script, String> {
+pub fn parse(content: &str) -> Result<Script, String> {
     script().parse(content.as_bytes()).map_err(|e| {
         format!("Failed parsing script: {:?}", e)
     })
 }
 
-fn script() -> Parser<u8, Script> {
+fn script<'a>() -> Parser<'a, u8, Script> {
     let name = script_name();
     let scenes = (scene() - space()).repeat(1..);
 
@@ -55,11 +54,11 @@ fn script() -> Parser<u8, Script> {
     })
 }
 
-fn script_name() -> Parser<u8, ScriptName> {
+fn script_name<'a>() -> Parser<'a, u8, ScriptName> {
     double_dashes() * char1(none_of(b"=")) - double_dashes() - sym(b'\n')
 }
 
-fn scene() -> Parser<u8, Scene> {
+fn scene<'a>() -> Parser<'a, u8, Scene> {
     let name = scene_name();
     let dialog = line().repeat(0..);
     let transitions = transitions();
@@ -71,12 +70,12 @@ fn scene() -> Parser<u8, Scene> {
     })
 }
 
-fn scene_name() -> Parser<u8, SceneName> {
+fn scene_name<'a>() -> Parser<'a, u8, SceneName> {
     let title = space() * trimmed(char1(none_of(b"-"))) - space();
     single_dashes() * title - single_dashes() - sym(b'\n')
 }
 
-fn line() -> Parser<u8, Line> {
+fn line<'a>() -> Parser<'a, u8, Line> {
     let character = trimmed(char1(none_of(b"(:")));
     let tone = trimmed(sym(b'(') * char1(none_of(b")")) - sym(b')')).opt();
     let content = trimmed(char1(none_of(b"\n")));
@@ -90,14 +89,14 @@ fn line() -> Parser<u8, Line> {
     })
 }
 
-fn transitions() -> Parser<u8, Vec<Transition>> {
+fn transitions<'a>() -> Parser<'a, u8, Vec<Transition>> {
     let heading = seq(b"Choices:\n");
     let bullets = transition().repeat(1..);
 
     (heading * bullets).opt().map(|trans_opt| trans_opt.unwrap_or(Vec::new()))
 }
 
-fn transition() -> Parser<u8, Transition> {
+fn transition<'a>() -> Parser<'a, u8, Transition> {
     let bullet = seq(b"- ");
     let before = char0(none_of(b"["));
     let next_scene = sym(b'[') * char1(none_of(b"]")) - sym(b']');
@@ -111,24 +110,20 @@ fn transition() -> Parser<u8, Transition> {
     })
 }
 
-fn single_dashes() -> Parser<u8, String> { char1(sym(b'-')) }
-fn double_dashes() -> Parser<u8, String> { char1(sym(b'=')) }
-fn space() -> Parser<u8, String> { char0(one_of(b" \t\n")) }
+fn single_dashes<'a>() -> Parser<'a, u8, String> { char1(sym(b'-')) }
+fn double_dashes<'a>() -> Parser<'a, u8, String> { char1(sym(b'=')) }
+fn space<'a>() -> Parser<'a, u8, String> { char0(one_of(b" \t\n")) }
 
-fn trimmed(p: Parser<u8, String>) -> Parser<u8, String> {
+fn trimmed<'a>(p: Parser<'a, u8, String>) -> Parser<'a, u8, String> {
     p.map(|s| s.trim().to_string())
 }
 
-fn char0(p: Parser<u8, u8>) -> Parser<u8, String> {
+fn char0<'a>(p: Parser<'a, u8, u8>) -> Parser<'a, u8, String> {
     p.repeat(0..).collect().convert(|s| String::from_utf8(s.to_vec()))
 }
-fn char1(p: Parser<u8, u8>) -> Parser<u8, String> {
+fn char1<'a>(p: Parser<'a, u8, u8>) -> Parser<'a, u8, String> {
    p.repeat(1..).collect().convert(|s| String::from_utf8(s.to_vec()))
 }
-
-
-
-#[cfg(test)]
 
 #[test]
 fn test_parse() {

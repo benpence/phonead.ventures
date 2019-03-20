@@ -9,6 +9,7 @@ use phone_adventures::sessions;
 use phone_adventures::twilio::planner;
 use phone_adventures::web;
 use std::collections::HashMap;
+use std::fs;
 use std::io;
 use std::sync;
 
@@ -96,4 +97,11 @@ fn load_readings(_directory: &str) -> Result<Vec<(script::ScriptName, reading::R
         script("script 1".to_string()),
         script("script 2".to_string())
     ])
+}
+
+fn load_script(filepath: &str) -> Result<script::Script, String> {
+    let contents = fs::read_to_string(filepath)
+        .map_err(|e| format!("Failed to load script '{}': {:?}", filepath, e))?;
+
+    script::parse(&contents)
 }
