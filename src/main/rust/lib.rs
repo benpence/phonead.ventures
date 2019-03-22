@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate pom;
 extern crate rouille;
 extern crate url;

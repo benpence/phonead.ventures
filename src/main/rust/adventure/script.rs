@@ -1,6 +1,6 @@
 use pom::parser::*;
+use std::fs;
 use std::vec::Vec;
-
 
 #[derive(PartialEq, Debug)]
 pub struct Script {
@@ -31,6 +31,37 @@ pub struct Line {
     pub character: String,
     pub tone: Option<String>,
     pub content: String,
+}
+
+pub static SCRIPT_EXTENSION: &str = ".script";
+
+pub fn find_in_dir(dir: &str) -> Result<String, String> {
+    let read_dir = fs::read_dir(&dir).map_err(|e| format!(
+        "Failed to read directory \"{}\": {}",
+        dir,
+        e
+    ))?;
+
+    for dir_entry_result in read_dir {
+        let file = dir_entry_result.map_err(|e| format!(
+            "Failed to read file info in dir \"{}\": {}",
+            dir,
+            e
+        ))?;
+
+        if file.file_name().to_str().iter().any(|s| s.ends_with(SCRIPT_EXTENSION)) {
+            return Ok(file.path().to_str().unwrap().to_string())
+        }
+    }
+
+    Err(format!("Couldn't find \"{}\" file in \"{}\"", SCRIPT_EXTENSION, dir))
+}
+
+pub fn load(filepath: &str) -> Result<Script, String> {
+    let contents = fs::read_to_string(filepath)
+        .map_err(|e| format!("Failed to load script '{}': {:?}", filepath, e))?;
+
+    parse(&contents)
 }
 
 pub fn parse(content: &str) -> Result<Script, String> {
