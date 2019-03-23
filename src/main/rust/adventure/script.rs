@@ -86,7 +86,7 @@ fn script<'a>() -> Parser<'a, u8, Script> {
 }
 
 fn script_name<'a>() -> Parser<'a, u8, ScriptName> {
-    double_dashes() * char1(none_of(b"=")) - double_dashes() - sym(b'\n')
+    double_dashes() * trimmed(char1(none_of(b"="))) - double_dashes() - sym(b'\n')
 }
 
 fn scene<'a>() -> Parser<'a, u8, Scene> {

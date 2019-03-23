@@ -1,4 +1,5 @@
 use crate::twilio::twiml;
+use std::path;
 
 use crate::types::*;
 
@@ -21,11 +22,12 @@ impl CallPlanner for TwilioRejectPlanner {
     }
 }
 
-pub struct TwilioPlanner {
+pub struct TwilioPlanner<'a> {
     pub base_url: String,
+    pub static_dir: &'a path::Path,
 }
 
-impl CallPlanner for TwilioPlanner {
+impl <'a> CallPlanner for TwilioPlanner<'a> {
 
     fn extract_caller(&self, params: &WebParams) -> Result<Caller, String> {
         extract_twilio_caller(params)
@@ -59,10 +61,15 @@ impl CallPlanner for TwilioPlanner {
     }
 }
 
-impl TwilioPlanner {
+impl <'a> TwilioPlanner<'a> {
     fn to_url(&self, audio_file: &AudioFile) -> String {
-        // TODO: Format for url
-        format!("{}/{}", self.base_url, audio_file.path)
+        let local_path = path::Path::new(&audio_file.path);
+
+        let static_suffix = local_path
+            .strip_prefix(&self.static_dir)
+            .unwrap_or(local_path);
+
+        format!("{}/static/{}", self.base_url, static_suffix.to_str().unwrap())
     }
 }
 
