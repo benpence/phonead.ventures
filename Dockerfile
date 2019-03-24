@@ -4,4 +4,4 @@ WORKDIR /root
 ADD ./ /root
 
 RUN cargo build
-ENTRYPOINT cargo run
+ENTRYPOINT cargo run -- --socket localhost:8000 --base_url localhost:8000
