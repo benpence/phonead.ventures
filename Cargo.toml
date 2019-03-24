@@ -3,9 +3,11 @@ name = "phone_adventures"
 version = "0.1.0"
 
 [dependencies]
-pom      = "3"
-rouille  = "3"
-url      = "1.7"
+pom       = "3"
+rouille   = "3"
+structopt = "0.2"
+url       = "1.7"
+
 
 [lib]
 name = "phone_adventures"

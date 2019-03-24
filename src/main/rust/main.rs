@@ -1,6 +1,8 @@
 extern crate phone_adventures;
 #[macro_use]
 extern crate rouille;
+#[macro_use]
+extern crate structopt;
 
 use phone_adventures::adventure::machine;
 use phone_adventures::adventure::reading;
@@ -12,9 +14,11 @@ use phone_adventures::web;
 use std::io;
 use std::path;
 use std::sync;
+use structopt::StructOpt;
 
 fn main() {
-    println!("Now listening on 0.0.0.0:8888");
+    let args = Cli::from_args();
+    println!("Now listening on {}", args.socket);
 
     let handler = web::Handler {
         machine: Box::new(machine::ScriptMachine {
@@ -24,17 +28,17 @@ fn main() {
                 .map_err(|e| panic!(e) ).unwrap(),
         }),
         planner: Box::new(planner::TwilioPlanner {
-            base_url: String::from("https://phonead.ventures"),
+            base_url: args.base_url.to_string(),
             static_dir: path::Path::new("src/main/resources/static/")
         }),
     };
 
     let handler_mutex = sync::Mutex::new(handler);
 
-    rouille::start_server("0.0.0.0:8888", move |request| {
+    rouille::start_server(args.socket.to_string(), move |request| {
         rouille::log(&request, io::stdout(), || {
             if let Some(modified_request) = request.remove_prefix("/static") {
-                rouille::match_assets(&modified_request, "src/main/resources/static")
+                rouille::match_assets(&modified_request, "src/main/resources/static/")
             } else {
                 router!(request,                                    
                     (POST) (/) => {  
@@ -47,6 +51,16 @@ fn main() {
             }
         })
     });
+}
+
+#[derive(structopt::StructOpt)]
+#[structopt(name = "example", about = "An example of StructOpt usage.")]
+struct Cli {
+    #[structopt(long = "socket")]
+    socket: String,
+
+    #[structopt(long = "base_url")]
+    base_url: String,
 }
 
 /// Load all readings from `readings_dir`. If any of the directories within
